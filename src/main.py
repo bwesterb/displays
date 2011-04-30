@@ -11,9 +11,12 @@ print 'done'
 def get_online_display_ids():
         N = 3
         while True:
+                # NOTE
+                # We assume CGGetOnlineDisplayList returns the displays
+                # in the same order on a second call.
                 v, ids, cnt = CGGetOnlineDisplayList(N, None, None)
                 if cnt < N:
-                        return sorted(ids)
+                        return ids
                 N *= 2
 
 def get_flags_of_display(_id):
