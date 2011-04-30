@@ -65,7 +65,7 @@ def cmd_list(args):
                 print '#%s Display %s %s' % (n, _id,
                                 ' '.join(get_flags_of_display(_id)))
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
-                for m in Q.CGDisplayCopyAllDisplayModes(_id, None):
+                for mode in Q.CGDisplayCopyAllDisplayModes(_id, None):
                         if (not args.all
                                 and not Q.CGDisplayModeIsUsableForDesktopGUI(
                                         mode)):
