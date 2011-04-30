@@ -8,7 +8,8 @@ def parse_modeString(s):
                 s, refresh = s.split('@', 1)
                 refresh = int(refresh)
         if 'x' in s:
-                width, height = [int(x) for x in s.split('x', 1)]
+                width, height = [int(x) if x.strip() else None
+                                        for x in s.split('x', 1)]
         elif s.strip():
                 width = int(s)
         else:
