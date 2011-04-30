@@ -45,12 +45,24 @@ def get_flags_of_display(_id):
                 ret.append('stereo')
         return ret
 
+def format_pixelEncoding(enc):
+        if enc == 'PPPPPPPP':
+                return '8b'
+        if enc == '-RRRRRGGGGGBBBBB':
+                return '15b'
+        if enc == '--------RRRRRRRRGGGGGGGGBBBBBBBB':
+                return '24b'
+        if enc == '--RRRRRRRRRRGGGGGGGGGGBBBBBBBBBB':
+                return '30b'
+        return 'unknown: %s' % enc
+
+
 def format_mode(mode):
-        return  '%s x %s @ %s %s bits' % (
+        return  '%s x %s @ %s %s' % (
                 Q.CGDisplayModeGetWidth(mode),
                 Q.CGDisplayModeGetHeight(mode),
                 Q.CGDisplayModeGetRefreshRate(mode),
-                Q.CGDisplayModeCopyPixelEncoding(mode))
+                format_pixelEncoding(Q.CGDisplayModeCopyPixelEncoding(mode)))
 
 def load_quartz():
         # TODO why is this so slow?
