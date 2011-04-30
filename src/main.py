@@ -65,7 +65,11 @@ def cmd_list(args):
                 print '#%s Display %s %s' % (n, _id,
                                 ' '.join(get_flags_of_display(_id)))
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
-                for mode in Q.CGDisplayCopyAllDisplayModes(_id, None):
+                for m in Q.CGDisplayCopyAllDisplayModes(_id, None):
+                        if (not args.all
+                                and not Q.CGDisplayModeIsUsableForDesktopGUI(
+                                        mode)):
+                                continue
                         print ' (*)' if cmode == mode else '    ', \
                                 format_mode(mode)
 
@@ -84,6 +88,12 @@ def cmd_set(args):
                         height == Q.CGDisplayModeGetHeight(mode)) and
                 (refresh is None or
                         refresh == Q.CGDisplayModeGetRefreshRate(mode)))]
+        # If there is a candidate that is usable for desktop GUI,
+        # we will filter out the candidates that are not usable.
+        if not args.all and any([Q.CGDisplayModeIsUsableForDesktopGUI(m)
+                        for m in candidates]):
+                candidates = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
+                                        candidates)
         if len(candidates) == 0:
                 print 'No supported displaymode matches'
                 return
@@ -121,6 +131,9 @@ def parse_args():
         
         parser_list = subparsers.add_parser('list',
                         help='List displays and modes')
+        parser_list.add_argument('-a', '--all', action="store_true",
+                help="List all modes, including those unsuitable"+
+                        " for desktop GUI")
         parser_list.set_defaults(func=cmd_list)
 
         parser_set = subparsers.add_parser('set',
@@ -133,6 +146,9 @@ def parse_args():
         parser_set.add_argument('-c', '--choose', type=int, metavar='N',
                 help="Choose the Nth alternative if multiple modes match "+
                              "MODE")
+        parser_set.add_argument('-a', '--all', action='store_true',
+                        help="Consider modes unusable for desktop GUI even "+
+                                "if there are matching modes that are usable")
         parser_set.set_defaults(func=cmd_set)
 
         args = parser.parse_args()
