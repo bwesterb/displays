@@ -1,3 +1,4 @@
+import printtable
 import argparse
 import sys
 
@@ -58,10 +59,9 @@ def format_pixelEncoding(enc):
 
 
 def format_mode(mode):
-        return  '%s x %s @ %s %s' % (
-                Q.CGDisplayModeGetWidth(mode),
-                Q.CGDisplayModeGetHeight(mode),
-                Q.CGDisplayModeGetRefreshRate(mode),
+        return (str(Q.CGDisplayModeGetWidth(mode)),
+                str(Q.CGDisplayModeGetHeight(mode)),
+                str(Q.CGDisplayModeGetRefreshRate(mode)),
                 format_pixelEncoding(Q.CGDisplayModeCopyPixelEncoding(mode)))
 
 def load_quartz():
@@ -72,18 +72,28 @@ def load_quartz():
 def cmd_list(args):
         load_quartz()
         ids = get_online_display_ids()
+        tables = []
+        headlines = []
         for n, _id in enumerate(ids):
                 Q.CGDisplayIsMain(_id)
-                print '#%s Display %s %s' % (n, _id,
-                                ' '.join(get_flags_of_display(_id)))
+                headlines.append('#%s display %s %s' % (n, _id,
+                                ' '.join(get_flags_of_display(_id))))
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
+                table = []
                 for mode in Q.CGDisplayCopyAllDisplayModes(_id, None):
                         if (not args.all
                                 and not Q.CGDisplayModeIsUsableForDesktopGUI(
                                         mode)):
                                 continue
-                        print ' (*)' if cmode == mode else '    ', \
-                                format_mode(mode)
+                        prefix = ' *' if cmode == mode else ' '
+                        table.append((prefix,) + format_mode(mode))
+                tables.append(table)
+        layout = reduce(printtable.sup_of_layouts,
+                        map(printtable.layout_table, tables), [])
+        for i, table in enumerate(tables):
+                print
+                print headlines[i]
+                printtable.print_table(table, layout=layout)
 
 def cmd_set(args):
         load_quartz()
@@ -108,34 +118,37 @@ def cmd_set(args):
                                         candidates)
         if len(candidates) == 0:
                 print 'No supported displaymode matches'
-                return
+                return -1
         if len(candidates) > 1 and args.choose is None:
                 print 'More than one mode matches:'
+                print
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
+                table = []
                 for n, mode in enumerate(candidates):
-                        print n, ' (*)' if cmode == mode else '    ', \
-                                format_mode(mode)
-                print 'Refine the request or use --choose to choose'
-                return
+                        table.append((' *' if cmode == mode else ' ', str(n)) +
+                                        format_mode(mode))
+                printtable.print_table(table)
+                print
+                print 'Refine the request or use `--choose n\' to pick '+ \
+                                'canididate n'
+                return -2
         r, config = Q.CGBeginDisplayConfiguration(None) 
         if(r != 0):
                 print 'CGBeginDisplayConfiguration failed'
-                return
+                return -3
         if(Q.CGConfigureDisplayWithDisplayMode(
                         config,
                         _id,
                         candidates[0 if args.choose is None else args.choose],
                         None) != 0):
                 print 'CGConfigureDisplayWithDisplayMode failed'
-                return
+                return -4
         if(Q.CGCompleteDisplayConfiguration(
                         config,
                         Q.kCGConfigurePermanently if args.permanently
                                 else Q.kCGConfigureForSession)):
                 print 'CGCompleteDisplayConfiguration failed'
-                return
-        else:
-                print 'success'
+                return -5
 
 def parse_args():
         parser = argparse.ArgumentParser(prog="displays")
