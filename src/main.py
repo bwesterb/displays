@@ -107,7 +107,8 @@ def cmd_set(args):
                 return
         if(Q.CGCompleteDisplayConfiguration(
                         config,
-                        Q.kCGConfigureForSession)):
+                        Q.kCGConfigurePermanently if args.permanently
+                                else Q.kCGConfigureForSession)):
                 print 'CGCompleteDisplayConfiguration failed'
                 return
         else:
@@ -126,6 +127,8 @@ def parse_args():
         parser_set.add_argument('mode', type=str, metavar='MODE',
                         help="The desired mode. Eg 1024x768@12")
         parser_set.add_argument('-D', '--display', type=int)
+        parser_set.add_argument('-p', '--permanently', action="store_true",
+                help="Persist the configuration over sessions")
         parser_set.add_argument('-c', '--choose', type=int, metavar='N',
                 help="Choose the Nth alternative if multiple modes match "+
                              "MODE")
