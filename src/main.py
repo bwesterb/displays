@@ -39,10 +39,10 @@ def get_flags_of_display(_id):
 
 def format_mode(mode):
         return  '%s x %s @ %s %s bits' % (
-                        mode['Width'],
-                        mode['Height'],
-                        mode['RefreshRate'],
-                        mode['BitsPerPixel'])
+                CGDisplayModeGetWidth(mode),
+                CGDisplayModeGetHeight(mode),
+                CGDisplayModeGetRefreshRate(mode),
+                CGDisplayModeCopyPixelEncoding(mode))
 
 def cmd_list(args):
         ids = get_online_display_ids()
@@ -50,8 +50,10 @@ def cmd_list(args):
                 CGDisplayIsMain(_id)
                 print '#%s Display %s %s' % (n, _id,
                                 ' '.join(get_flags_of_display(_id)))
-                for mode in CGDisplayAvailableModes(_id):
-                        print ' ', format_mode(mode)
+                cmode = CGDisplayCopyDisplayMode(_id)
+                for mode in CGDisplayCopyAllDisplayModes(_id, None):
+                        print ' (*)' if cmode == mode else '    ', \
+                                format_mode(mode)
 
 def cmd_set(args):
         if args.display is None:
@@ -59,29 +61,43 @@ def cmd_set(args):
         else:
                 _id = get_online_display_ids()[args.display]
 
-        candidates = [mode for mode in CGDisplayAvailableModes(_id)
-                if ((args.width is None or
-                                args.width == mode['Width']) and
-                        (args.height is None or
-                                args.height == mode['Height']) and
-                        (args.depth is None or
-                                args.depth == mode['BitsPerPixel']) and
-                        (args.refresh is None or
-                                args.refresh == mode['RefreshRate']))]
+        candidates = [mode for mode
+                        in CGDisplayCopyAllDisplayModes(_id, None) if (
+                (args.width is None or
+                                args.width == CGDisplayModeGetWidth(mode)) and
+                (args.height is None or
+                        args.height == CGDisplayModeGetHeight(mode)) and
+                (args.refresh is None or
+                        args.refresh == CGDisplayModeGetRefreshRate(mode)))]
         if len(candidates) == 0:
                 print 'No supported displaymode matches'
                 return
-        if len(candidates) > 1:
+        if len(candidates) > 1 and args.choose is None:
                 print 'More than one mode matches:'
-                for mode in candidates:
-                        print format_mode(mode)
+                cmode = CGDisplayCopyDisplayMode(_id)
+                for n, mode in enumerate(candidates):
+                        print n, ' (*)' if cmode == mode else '    ', \
+                                format_mode(mode)
+                print 'Refine the request or use --choose to choose'
                 return
         r, config = CGBeginDisplayConfiguration(None) 
         if(r != 0):
                 print 'CGBeginDisplayConfiguration failed'
                 return
-        CGConfigureDisplayMode(config, _id, candidates[0])
-        CGCompleteDisplayConfiguration(config, kCGConfigureForSession)
+        if(CGConfigureDisplayWithDisplayMode(
+                        config,
+                        _id,
+                        candidates[0 if args.choose is None else args.choose],
+                        None) != 0):
+                print 'CGConfigureDisplayWithDisplayMode failed'
+                return
+        if(CGCompleteDisplayConfiguration(
+                        config,
+                        kCGConfigureForSession)):
+                print 'CGCompleteDisplayConfiguration failed'
+                return
+        else:
+                print 'success'
 
 def parse_args():
         parser = argparse.ArgumentParser(prog="displays")
@@ -96,8 +112,9 @@ def parse_args():
         parser_set.add_argument('-W', '--width', type=int)
         parser_set.add_argument('-H', '--height', type=int)
         parser_set.add_argument('-R', '--refresh', type=int)
-        parser_set.add_argument('-B', '--depth', type=int)
         parser_set.add_argument('-D', '--display', type=int)
+        parser_set.add_argument('-c', '--choose', type=int, metavar='N',
+                help="Choose the Nth alternative if multiple modes match")
         parser_set.set_defaults(func=cmd_set)
 
         args = parser.parse_args()
