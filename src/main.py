@@ -8,6 +8,20 @@ sys.stdout.flush()
 from Quartz import *
 print 'done'
 
+def parse_modeString(s):
+        """ Parses a modeString like '1024 x 768 @ 60' """
+        refresh, width, height = None, None, None
+        if '@' in s:
+                s, refresh = s.split('@', 1)
+                refresh = int(refresh)
+        if 'x' in s:
+                width, height = [int(x) for x in s.split('x', 1)]
+        elif s.strip():
+                width = int(s)
+        else:
+                width = None
+        return (width, height, refresh)
+
 def get_online_display_ids():
         N = 3
         while True:
@@ -60,15 +74,15 @@ def cmd_set(args):
                 _id = CGMainDisplayID()
         else:
                 _id = get_online_display_ids()[args.display]
-
+        width, height, refresh = parse_modeString(args.mode)
         candidates = [mode for mode
                         in CGDisplayCopyAllDisplayModes(_id, None) if (
-                (args.width is None or
-                                args.width == CGDisplayModeGetWidth(mode)) and
-                (args.height is None or
-                        args.height == CGDisplayModeGetHeight(mode)) and
-                (args.refresh is None or
-                        args.refresh == CGDisplayModeGetRefreshRate(mode)))]
+                (width is None or
+                        width == CGDisplayModeGetWidth(mode)) and
+                (height is None or
+                        height == CGDisplayModeGetHeight(mode)) and
+                (refresh is None or
+                        refresh == CGDisplayModeGetRefreshRate(mode)))]
         if len(candidates) == 0:
                 print 'No supported displaymode matches'
                 return
@@ -109,12 +123,12 @@ def parse_args():
 
         parser_set = subparsers.add_parser('set',
                         help='Set displaymode')
-        parser_set.add_argument('-W', '--width', type=int)
-        parser_set.add_argument('-H', '--height', type=int)
-        parser_set.add_argument('-R', '--refresh', type=int)
+        parser_set.add_argument('mode', type=str, metavar='MODE',
+                        help="The desired mode. Eg 1024x768@12")
         parser_set.add_argument('-D', '--display', type=int)
         parser_set.add_argument('-c', '--choose', type=int, metavar='N',
-                help="Choose the Nth alternative if multiple modes match")
+                help="Choose the Nth alternative if multiple modes match "+
+                             "MODE")
         parser_set.set_defaults(func=cmd_set)
 
         args = parser.parse_args()
