@@ -10,6 +10,9 @@ It is easily installed via Python's setuptools.
 
 Or run `sudo python setup.py install` in the source code folder.
 
+Basic usage
+-----------
+
 To list the online displays and its displaymodes, run `displays list`.
 
         $ displays list
@@ -41,3 +44,10 @@ using the `--choose` option.
 
 Displaymodes that Mac OS X thinks are not suitable for the desktop GUI
 are hidden.  Use `-all` (`-a`) to involve them.
+
+To change the mode of another display, use the option `--display`.  Example:
+
+        $ displays set 1280x1024@75 --display 1
+
+Changes persist for the duration of the loginsession.  To apply the
+changes for every session, use the `--permanently` flag.
