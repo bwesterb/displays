@@ -2,6 +2,26 @@ import printtable
 import argparse
 import sys
 
+def cmp_mode(b, a):
+        """ A comparison function for displaymodes """
+        tmp = cmp(Q.CGDisplayModeIsUsableForDesktopGUI(a),
+                  Q.CGDisplayModeIsUsableForDesktopGUI(b))
+        if tmp != 0: return tmp
+        tmp = cmp(guess_bitDepth(Q.CGDisplayModeCopyPixelEncoding(a)),
+                  guess_bitDepth(Q.CGDisplayModeCopyPixelEncoding(b)))
+        if tmp != 0: return tmp
+        tmp = cmp(Q.CGDisplayModeGetHeight(a) * Q.CGDisplayModeGetWidth(a),
+                  Q.CGDisplayModeGetHeight(b) * Q.CGDisplayModeGetWidth(b))
+        if tmp != 0: return tmp
+        tmp = cmp(Q.CGDisplayModeGetHeight(a),
+                  Q.CGDisplayModeGetHeight(b))
+        if tmp != 0: return tmp
+        tmp = cmp(Q.CGDisplayModeGetWidth(a),
+                  Q.CGDisplayModeGetWidth(b))
+        if tmp != 0: return tmp
+        return cmp(Q.CGDisplayModeGetRefreshRate(a),
+                   Q.CGDisplayModeGetRefreshRate(b))
+
 def parse_modeString(s):
         """ Parses a modeString like '1024 x 768 @ 60' """
         refresh, width, height = None, None, None
@@ -46,17 +66,22 @@ def get_flags_of_display(_id):
                 ret.append('stereo')
         return ret
 
-def format_pixelEncoding(enc):
+def guess_bitDepth(enc):
         if enc == 'PPPPPPPP':
-                return '8b'
+                return 8
         if enc == '-RRRRRGGGGGBBBBB':
-                return '15b'
+                return 15
         if enc == '--------RRRRRRRRGGGGGGGGBBBBBBBB':
-                return '24b'
+                return 24
         if enc == '--RRRRRRRRRRGGGGGGGGGGBBBBBBBBBB':
-                return '30b'
-        return 'unknown: %s' % enc
+                return 30
+        return None
 
+def format_pixelEncoding(enc):
+        depth = guess_bitDepth(enc)
+        if depth is None:
+                return 'unknown: %s' % enc
+        return str(depth) + 'b'
 
 def format_mode(mode):
         return (str(Q.CGDisplayModeGetWidth(mode)),
@@ -80,7 +105,8 @@ def cmd_list(args):
                                 ' '.join(get_flags_of_display(_id))))
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
                 table = []
-                for mode in Q.CGDisplayCopyAllDisplayModes(_id, None):
+                for mode in sorted(Q.CGDisplayCopyAllDisplayModes(_id, None),
+                                        cmp=cmp_mode):
                         if (not args.all
                                 and not Q.CGDisplayModeIsUsableForDesktopGUI(
                                         mode)):
@@ -102,14 +128,15 @@ def cmd_set(args):
         else:
                 _id = get_online_display_ids()[args.display]
         width, height, refresh = parse_modeString(args.mode)
-        candidates = [mode for mode
+        candidates = sorted([mode for mode
                         in Q.CGDisplayCopyAllDisplayModes(_id, None) if (
                 (width is None or
                         width == Q.CGDisplayModeGetWidth(mode)) and
                 (height is None or
                         height == Q.CGDisplayModeGetHeight(mode)) and
                 (refresh is None or
-                        refresh == Q.CGDisplayModeGetRefreshRate(mode)))]
+                        refresh == Q.CGDisplayModeGetRefreshRate(mode)))],
+                                        cmp_mode)
         # If there is a candidate that is usable for desktop GUI,
         # we will filter out the candidates that are not usable.
         if not args.all and any([Q.CGDisplayModeIsUsableForDesktopGUI(m)
