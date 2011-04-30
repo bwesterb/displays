@@ -12,33 +12,32 @@ Or run `sudo python setup.py install` in the source code folder.
 
 To list the online displays and its displaymodes, run `displays list`.
 
-    $ displays list
-    Loading CoreGraphics bindings...  done
-    #0 Display 69676864 main online active builtin
-      1280 x 800 @ 0.0 8 bits
-      1280 x 800 @ 0.0 16 bits
-      1280 x 800 @ 0.0 32 bits
-       [...]
-    #1 Display 1535231425 online active
-      640 x 480 @ 90.0 8 bits
-      640 x 480 @ 90.0 16 bits
-      640 x 480 @ 90.0 32 bits
-       [...]
+        $ displays list
+        #0 display 69676864 main online active builtin
+         * 1280  800   0.0 24b
+           1152  720   0.0 24b
+           1024  768   0.0 24b
+           1024  768   0.0 24b
+           1024  640   0.0 24b
+            800  600   0.0 24b
+            800  600   0.0 24b
 
-To set the mode of a display, run `display set`.  You don't need
-to specify all parameters as long as there is only one mode matching
-the provided parameters.
+To set the mode of a display, run `display set`.
 
-    $ displays set -D 1 -W 1024 -H 768 -B 32
-    Loading CoreGraphics bindings...  done
-    More than one mode matches:
-    1024 x 768 @ 90.0 32 bits
-    1024 x 768 @ 96.0 32 bits
-    1024 x 768 @ 60.0 32 bits
-    1024 x 768 @ 70.0 32 bits
-    1024 x 768 @ 75.0 32 bits
-    1024 x 768 @ 85.0 32 bits
-    1024 x 768 @ 100.0 32 bits
-    1024 x 768 @ 120.0 32 bits
+        $ displays set 1280x800
 
-    $ display set -D 1 -W 1024 -H 1024 -N 32 -R 60
+If several modes match the same modeline, you can pick one
+using the `--choose` option.
+
+        $ displays set 1024x
+        More than one mode matches:
+
+          0 1024 768 0.0 24b
+          1 1024 768 0.0 24b
+          2 1024 640 0.0 24b
+
+        Refine the request or use `--choose n' to pick canididate n
+        $ displays set 1024x --choose 2
+
+Displaymodes that Mac OS X thinks are not suitable for the desktop GUI
+are hidden.  Use `-all` (`-a`) to involve them.
