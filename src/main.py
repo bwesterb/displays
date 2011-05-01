@@ -213,6 +213,43 @@ def cmd_mirror(args):
                 print 'CGCompleteDisplayConfiguration failed'
                 return -8
 
+def cmd_unmirror(args):
+        load_quartz()
+        
+        # Find the display to be unmirrored
+        ids = [i for i in get_online_display_ids()
+                        if Q.CGDisplayIsInMirrorSet(i)]
+        if len(ids) == 0:
+                print 'There are no mirrored displays'
+                return -9
+        if args.display is None:
+                main_id = Q.CGMainDisplayID()
+                if main_id in ids:
+                        _id = main_id
+                else:
+                        _id = ids[0]
+        else:
+                _id = get_online_display_ids()[args.display]
+                if _id not in ids:
+                        print 'The specified display is not in a mirroring set'
+                        return -10
+
+        # Do it
+        r, config = Q.CGBeginDisplayConfiguration(None)
+        if(r != 0):
+                print 'CGBeginDisplayConfiguration failed'
+                return -3
+        if(Q.CGConfigureDisplayMirrorOfDisplay(config, _id,
+                        Q.kCGNullDirectDisplay) != 0):
+                print 'CGConfigureDisplayMirrorOfDisplay failed'
+                return -11
+        if(Q.CGCompleteDisplayConfiguration(
+                        config,
+                        Q.kCGConfigurePermanently if args.permanently
+                                else Q.kCGConfigureForSession)):
+                print 'CGCompleteDisplayConfiguration failed'
+                return -12
+
 def parse_args():
         parser = argparse.ArgumentParser(prog="displays")
         subparsers = parser.add_subparsers()
@@ -240,7 +277,7 @@ def parse_args():
         parser_set.set_defaults(func=cmd_set)
 
         parser_mirror = subparsers.add_parser('mirror',
-                        help='Configure mirroring sets')
+                        help='Add a display to a mirror set')
         parser_mirror.add_argument('-d', '--display', type=int,
                         help="The DISPLAY to add to the mirrorubg set")
         parser_mirror.add_argument('-m', '--master', type=int,
@@ -249,6 +286,14 @@ def parse_args():
         parser_mirror.add_argument('-p', '--permanently', action="store_true",
                 help="Persist the configuration over sessions")
         parser_mirror.set_defaults(func=cmd_mirror)
+
+        parser_unmirror = subparsers.add_parser('unmirror',
+                        help='Remove a display from its mirror set')
+        parser_unmirror.add_argument('-d', '--display', type=int,
+                        help="The DISPLAY to be removed from its mirrorset")
+        parser_unmirror.add_argument('-p', '--permanently', action="store_true",
+                help="Persist the configuration over sessions")
+        parser_unmirror.set_defaults(func=cmd_unmirror)
 
         args = parser.parse_args()
         args.func(args)
