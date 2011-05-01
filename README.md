@@ -1,7 +1,8 @@
 displays
 ========
 
-displays is a simple commandline tool to configure displaymodes in Mac OS X.
+displays is a simple commandline tool to configure displaymodes and
+mirroring in Mac OS X.
 
 It is easily installed via Python's setuptools.
 
@@ -10,8 +11,8 @@ It is easily installed via Python's setuptools.
 
 Or run `sudo python setup.py install` in the source code folder.
 
-Basic usage
------------
+Configuring display modes
+-------------------------
 
 To list the online displays and its displaymodes, run `displays list`.
 
@@ -51,3 +52,21 @@ To change the mode of another display, use the option `--display`.  Example:
 
 Changes persist for the duration of the loginsession.  To apply the
 changes for every session, use the `--permanently` flag.
+
+Configuring mirroring
+---------------------
+A bunch of displays that show the same image are called a mirroring set.
+If you want display #0 to be in the same mirroring set as display #1, run:
+
+        $ displays mirror --display 0 --master 1
+
+If you do not specify `--display` or `--master`, the master display
+and the first other display will be mirrored.
+
+To remove display #1 from a mirroring set, run:
+
+        $ displays unmirror --display 1
+
+If you do not specify `--display` then the main display will be unmirrored if
+it is in a display set. Otherwise another display in a mirroring set will
+be unmirrored.
