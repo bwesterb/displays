@@ -296,10 +296,11 @@ def parse_args():
         parser_unmirror.set_defaults(func=cmd_unmirror)
 
         args = parser.parse_args()
-        args.func(args)
+        return args
 
 def main():
-        parse_args()
+        args = parse_args()
+        return args.func(args)
 
 if __name__ == '__main__':
-        main()
+        sys.exit(main())
