@@ -177,6 +177,42 @@ def cmd_set(args):
                 print 'CGCompleteDisplayConfiguration failed'
                 return -5
 
+def cmd_mirror(args):
+        load_quartz()
+
+        # Find the default values for _id and _mid
+        ids = get_online_display_ids()
+        main_id = Q.CGMainDisplayID()
+        if len(ids) == 1:
+                print 'There is only one display'
+                return -6
+        if args.master is None:
+                _mid = main_id
+        else:
+                _mid = ids[args.master]
+        if args.display is None:
+                if _mid != main_id:
+                        _id = main_id
+                else:
+                        _id = [i for i in ids if i != _mid][0]
+        else:
+                _id = ids[args.display]
+
+        # Do the mirroring
+        r, config = Q.CGBeginDisplayConfiguration(None)
+        if(r != 0):
+                print 'CGBeginDisplayConfiguration failed'
+                return -3
+        if(Q.CGConfigureDisplayMirrorOfDisplay(config, _id, _mid) != 0):
+                print 'CGConfigureDisplayMirrorOfDisplay failed'
+                return -7
+        if(Q.CGCompleteDisplayConfiguration(
+                        config,
+                        Q.kCGConfigurePermanently if args.permanently
+                                else Q.kCGConfigureForSession)):
+                print 'CGCompleteDisplayConfiguration failed'
+                return -8
+
 def parse_args():
         parser = argparse.ArgumentParser(prog="displays")
         subparsers = parser.add_subparsers()
@@ -202,6 +238,17 @@ def parse_args():
                         help="Consider modes unusable for desktop GUI even "+
                                 "if there are matching modes that are usable")
         parser_set.set_defaults(func=cmd_set)
+
+        parser_mirror = subparsers.add_parser('mirror',
+                        help='Configure mirroring sets')
+        parser_mirror.add_argument('-d', '--display', type=int,
+                        help="The DISPLAY to add to the mirrorubg set")
+        parser_mirror.add_argument('-m', '--master', type=int,
+                        metavar='DISPLAY',
+                        help="A DISPLAY already in the mirrorubg set")
+        parser_mirror.add_argument('-p', '--permanently', action="store_true",
+                help="Persist the configuration over sessions")
+        parser_mirror.set_defaults(func=cmd_mirror)
 
         args = parser.parse_args()
         args.func(args)
