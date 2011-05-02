@@ -251,18 +251,38 @@ def cmd_unmirror(args):
                 return -12
 
 def parse_args():
-        parser = argparse.ArgumentParser(prog="displays")
-        subparsers = parser.add_subparsers()
+        parser = argparse.ArgumentParser(prog="displays",
+                description="""
+                displays allows you to list displays, set displaymodes
+                and configure mirroring on Mac OS X.
+                """)
+        subparsers = parser.add_subparsers(title='commands')
         
+        # displays list
         parser_list = subparsers.add_parser('list',
+                description="""
+                Lists all online displays and their display modes.
+                The currently active displaymode is prefixed by a *.
+                Modes that Apple thinks are unusable for a desktop GUI
+                are hidden.  Use `--all' to show them. """,
                         help='List displays and modes')
         parser_list.add_argument('-a', '--all', action="store_true",
                 help="List all modes, including those unsuitable"+
                         " for desktop GUI")
         parser_list.set_defaults(func=cmd_list)
 
+        # displays set
         parser_set = subparsers.add_parser('set',
-                        help='Set displaymode')
+                description="""
+                Sets the mode of a given display. If no display is
+                specified, the main display is assumed. If multiple
+                displaymodes match the modestring, you can choose one
+                with `--choose'.
+		Some displaymodes are deemed unusable for desktop
+		GUI by Apple. They are automatically hidden from
+		the list of candidates if there are usable modes
+		among them. Use `--all' to override. """,
+                help='Set mode (resolution, refresh rate, etc.) of display')
         parser_set.add_argument('mode', type=str, metavar='MODE',
                         help="The desired mode. Eg 1024x768@12")
         parser_set.add_argument('-D', '--display', type=int)
@@ -276,18 +296,33 @@ def parse_args():
                                 "if there are matching modes that are usable")
         parser_set.set_defaults(func=cmd_set)
 
+        # displays mirror
         parser_mirror = subparsers.add_parser('mirror',
+                description="""
+                Displays that show the same image are in the same mirroring set.
+                This command add the specified display to the mirroring set
+                of another display.
+                If no displays are specified, the main display and
+                the first other display are assumed.  """,
                         help='Add a display to a mirror set')
         parser_mirror.add_argument('-d', '--display', type=int,
-                        help="The DISPLAY to add to the mirrorubg set")
+                        help="The DISPLAY to add to the mirroring set")
         parser_mirror.add_argument('-m', '--master', type=int,
                         metavar='DISPLAY',
-                        help="A DISPLAY already in the mirrorubg set")
+                        help="A DISPLAY already in the mirroring set")
         parser_mirror.add_argument('-p', '--permanently', action="store_true",
                 help="Persist the configuration over sessions")
         parser_mirror.set_defaults(func=cmd_mirror)
 
+        # displays unmirror
         parser_unmirror = subparsers.add_parser('unmirror',
+                description="""
+                Displays that show the same image are in the same mirroring set.
+                This command removes a specified display from its mirroring
+                set.
+                If no displays are specified, the main display is assumed.
+                If the main display isn't mirrored, the first other display
+                that *is* in a mirroring set is assumed.""",
                         help='Remove a display from its mirror set')
         parser_unmirror.add_argument('-d', '--display', type=int,
                         help="The DISPLAY to be removed from its mirrorset")
