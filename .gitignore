@@ -1,6 +1,6 @@
 *.pyo
 *.pyc
-*.sqp
+*.swp
 /*.egg-info
 /build
 /dist
