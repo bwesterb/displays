@@ -2,6 +2,24 @@ import printtable
 import argparse
 import sys
 
+# From IOKit/IOGraphicsTypes.h
+IOFLAGS = {
+        'valid':        0x000001,
+        'safe':         0x000002,
+        'default':      0x000003,
+        'always_show':  0x000008,
+        'never_show':   0x000010,
+        'not_resize':   0x000020,
+        'interlaced':   0x000040,
+        'simulscan':    0x000100,
+        'not_preset':   0x000200,
+        'builtin':      0x000400,
+        'stretched':    0x000800,
+        'not_gfx_qual': 0x001000,
+        'val_ag_dply':  0x002000,
+        'tv':           0x100000,
+        'mirroring_ok': 0x200000 }
+
 def cmp_mode(b, a):
         """ A comparison function for displaymodes """
         tmp = cmp(Q.CGDisplayModeIsUsableForDesktopGUI(a),
@@ -83,11 +101,25 @@ def format_pixelEncoding(enc):
                 return 'unknown: %s' % enc
         return str(depth) + 'b'
 
-def format_mode(mode):
-        return (str(Q.CGDisplayModeGetWidth(mode)),
-                str(Q.CGDisplayModeGetHeight(mode)),
-                str(Q.CGDisplayModeGetRefreshRate(mode)),
-                format_pixelEncoding(Q.CGDisplayModeCopyPixelEncoding(mode)))
+def format_mode(mode, show_flags=False):
+        ret = (str(Q.CGDisplayModeGetWidth(mode)),
+               str(Q.CGDisplayModeGetHeight(mode)),
+               str(Q.CGDisplayModeGetRefreshRate(mode)),
+               format_pixelEncoding(Q.CGDisplayModeCopyPixelEncoding(mode)))
+        if show_flags:
+                flags = Q.CGDisplayModeGetIOFlags(mode)
+                flagbit = ''
+                first = True
+                for name, flag in IOFLAGS.iteritems():
+                        if flags & flag == 0:
+                                continue
+                        if first:
+                                first = False
+                        else:
+                                flagbit += ' '
+                        flagbit += name
+                ret += (flagbit,)
+        return ret
 
 def load_quartz():
         # TODO why is this so slow?
@@ -112,7 +144,7 @@ def cmd_list(args):
                                         mode)):
                                 continue
                         prefix = ' *' if cmode == mode else ' '
-                        table.append((prefix,) + format_mode(mode))
+                        table.append((prefix,) + format_mode(mode, args.flags))
                 tables.append(table)
         layout = reduce(printtable.sup_of_layouts,
                         map(printtable.layout_table, tables), [])
@@ -153,7 +185,7 @@ def cmd_set(args):
                 table = []
                 for n, mode in enumerate(candidates):
                         table.append((' *' if cmode == mode else ' ', str(n)) +
-                                        format_mode(mode))
+                                        format_mode(mode, args.flags))
                 printtable.print_table(table)
                 print
                 print 'Refine the request or use `--choose n\' to pick '+ \
@@ -269,6 +301,8 @@ def parse_args():
         parser_list.add_argument('-a', '--all-modes', action="store_true",
                 help="List all modes, including those unsuitable"+
                         " for desktop GUI")
+        parser_list.add_argument('-f', '--flags', action="store_true",
+                help="Show IO flags")
         parser_list.set_defaults(func=cmd_list)
 
         # displays set
@@ -294,6 +328,8 @@ def parse_args():
         parser_set.add_argument('-a', '--all-modes', action='store_true',
                         help="Consider modes unusable for desktop GUI even "+
                                 "if there are matching modes that are usable")
+        parser_set.add_argument('-f', '--flags', action="store_true",
+                help="Show IO flags, when displaying modes")
         parser_set.set_defaults(func=cmd_set)
 
         # displays mirror
