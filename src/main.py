@@ -107,7 +107,7 @@ def cmd_list(args):
                 table = []
                 for mode in sorted(Q.CGDisplayCopyAllDisplayModes(_id, None),
                                         cmp=cmp_mode):
-                        if (not args.all
+                        if (not args.all_modes
                                 and not Q.CGDisplayModeIsUsableForDesktopGUI(
                                         mode)):
                                 continue
@@ -139,7 +139,7 @@ def cmd_set(args):
                                         cmp_mode)
         # If there is a candidate that is usable for desktop GUI,
         # we will filter out the candidates that are not usable.
-        if not args.all and any([Q.CGDisplayModeIsUsableForDesktopGUI(m)
+        if not args.all_modes and any([Q.CGDisplayModeIsUsableForDesktopGUI(m)
                         for m in candidates]):
                 candidates = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
                                         candidates)
@@ -264,9 +264,9 @@ def parse_args():
                 Lists all online displays and their display modes.
                 The currently active displaymode is prefixed by a *.
                 Modes that Apple thinks are unusable for a desktop GUI
-                are hidden.  Use `--all' to show them. """,
+                are hidden.  Use `--all-modes' to show them. """,
                         help='List displays and modes')
-        parser_list.add_argument('-a', '--all', action="store_true",
+        parser_list.add_argument('-a', '--all-modes', action="store_true",
                 help="List all modes, including those unsuitable"+
                         " for desktop GUI")
         parser_list.set_defaults(func=cmd_list)
@@ -281,7 +281,7 @@ def parse_args():
 		Some displaymodes are deemed unusable for desktop
 		GUI by Apple. They are automatically hidden from
 		the list of candidates if there are usable modes
-		among them. Use `--all' to override. """,
+		among them. Use `--all-modes' to override. """,
                 help='Set mode (resolution, refresh rate, etc.) of display')
         parser_set.add_argument('mode', type=str, metavar='MODE',
                         help="The desired mode. Eg 1024x768@12")
@@ -291,7 +291,7 @@ def parse_args():
         parser_set.add_argument('-c', '--choose', type=int, metavar='N',
                 help="Choose the Nth alternative if multiple modes match "+
                              "MODE")
-        parser_set.add_argument('-a', '--all', action='store_true',
+        parser_set.add_argument('-a', '--all-modes', action='store_true',
                         help="Consider modes unusable for desktop GUI even "+
                                 "if there are matching modes that are usable")
         parser_set.set_defaults(func=cmd_set)
