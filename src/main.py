@@ -151,7 +151,8 @@ def cmd_list(args):
         for i, table in enumerate(tables):
                 print
                 print headlines[i]
-                printtable.print_table(table, layout=layout)
+                printtable.print_table(table, layout=layout,
+                                        alignment='rrrrrl')
 
 def cmd_set(args):
         load_quartz()
