@@ -152,7 +152,8 @@ def cmd_list(args):
                 print
                 print headlines[i]
                 printtable.print_table(table, layout=layout,
-                                        alignment='rrrrrl')
+                                        alignment='rrllrl',
+                                        separators=(' ',' ',' x ', ' @'))
 
 def cmd_set(args):
         load_quartz()
@@ -187,7 +188,9 @@ def cmd_set(args):
                 for n, mode in enumerate(candidates):
                         table.append((' *' if cmode == mode else ' ', str(n)) +
                                         format_mode(mode, args.flags))
-                printtable.print_table(table)
+                printtable.print_table(table,
+                                        alignment='rrrllr',
+                                        separators=(' ',' ',' ',' x ', ' @'))
                 print
                 print 'Refine the request or use `--choose n\' to pick '+ \
                                 'canididate n'
