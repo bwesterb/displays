@@ -2,7 +2,8 @@
 
 class Table(object):
         class Empty(object):
-                pass
+                def __str__(self):
+                        return ''
         def __init__(self, data=None):
                 self.rows = [] if data is None \
                         else [[field for field in row] for row in data] 
@@ -48,18 +49,18 @@ class Table(object):
                 ret = []
                 for row in self.rows:
                         try:
-                                row.append(row[i])
+                                ret.append(row[i])
                         except IndexError:
                                 row.append(self.empty_value)
                 return ret
         def set_col(self, i, col):
-                for row in self.rows:
+                for j, row in enumerate(self.rows):
                         try:
-                                row[i] = col[i]
+                                row[i] = col[j]
                         except IndexError:
                                 row.extend((self.empty_value,) * (
                                                 len(row) - i - 1))
-                                row.append(col[i])
+                                row.append(col[j])
         def del_col(self, i):
                 for row in self.rows:
                         try:
@@ -70,6 +71,11 @@ class Table(object):
                 self.rows.append(row)
         def append_col(self, col):
                 self.set_col(self.width, col)
+        def insert_row(self, i, row):
+                self.rows.insert(i, list(row))
+        def insert_col(self, i, col):
+                for j, row in enumerate(self.rows):
+                        row.insert(i, col[j])
         @property
         def width(self):
                 return max((len(row) for row in self.rows))
@@ -113,6 +119,8 @@ class Table(object):
                         for n, field in enumerate(row):
                                 if n != 0:
                                         ret += seps[n]
+                                if field is self.empty_value:
+                                        field = ''
                                 if alignment[n] == 'r':
                                         ret += " "*(layout[n] - len(field)
                                                         ) + field
@@ -136,6 +144,8 @@ class Table(object):
                         if len(row) > len(ret):
                                 ret += [0] * (len(row) - len(ret))
                         for n, field in enumerate(row):
+                                if field is self.empty_value:
+                                        field = ''
                                 ret[n] = max(ret[n], len(field))
                 return ret
 
