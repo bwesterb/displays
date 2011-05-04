@@ -18,13 +18,13 @@ To list the online displays and its displaymodes, run `displays list`.
 
         $ displays list
         #0 display 69676864 main online active builtin
-         * 1280  800   0.0 24b
-           1152  720   0.0 24b
-           1024  768   0.0 24b
-           1024  768   0.0 24b
-           1024  640   0.0 24b
-            800  600   0.0 24b
-            800  600   0.0 24b
+          1280 x 800            
+          1152 x 720            
+          1024 x 768            
+        * 1024 x 768  Stretched 
+          1024 x 640            
+           800 x 600            
+           800 x 600  Stretched 
 
 To set the mode of a display, run `display set`.
 
@@ -36,15 +36,15 @@ using the `--choose` option.
         $ displays set 1024x
         More than one mode matches:
 
-          0 1024 768 0.0 24b
-          1 1024 768 0.0 24b
-          2 1024 640 0.0 24b
+        0  1024 x 768          
+        1  1024 x 768 Stretched
+        2  1024 x 640          
 
         Refine the request or use `--choose n' to pick canididate n
         $ displays set 1024x --choose 2
 
 Displaymodes that Mac OS X thinks are not suitable for the desktop GUI
-are hidden.  Use `-all` (`-a`) to involve them.
+are hidden.  Use `--all` (`-a`) to involve them.
 
 To change the mode of another display, use the option `--display`.  Example:
 
@@ -70,3 +70,11 @@ To remove display #1 from a mirroring set, run:
 If you do not specify `--display` then the main display will be unmirrored if
 it is in a display set. Otherwise another display in a mirroring set will
 be unmirrored.
+
+Hidden refresh rate, bit depth and hardware flags
+-------------------------------------------------
+If all listed displaymodes have the same refresh rate, the refresh rates
+are hidden.  The same goes for the bit depth.  Hardware flags (for instance:
+`Stretched`) are only shown when required to differentiate modes.
+
+To override this behaviour, use `--full-modes`.
