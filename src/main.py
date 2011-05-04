@@ -1,5 +1,5 @@
-import printtable
 import argparse
+import table
 import sys
 
 # From IOKit/IOGraphicsTypes.h
@@ -101,25 +101,26 @@ def format_pixelEncoding(enc):
                 return 'unknown: %s' % enc
         return str(depth) + 'b'
 
-def format_mode(mode, show_flags=False):
-        ret = (str(Q.CGDisplayModeGetWidth(mode)),
-               str(Q.CGDisplayModeGetHeight(mode)),
-               str(Q.CGDisplayModeGetRefreshRate(mode)),
-               format_pixelEncoding(Q.CGDisplayModeCopyPixelEncoding(mode)))
-        if show_flags:
-                flags = Q.CGDisplayModeGetIOFlags(mode)
-                flagbit = ''
-                first = True
-                for name, flag in IOFLAGS.iteritems():
-                        if flags & flag == 0:
-                                continue
-                        if first:
-                                first = False
-                        else:
-                                flagbit += ' '
-                        flagbit += name
-                ret += (flagbit,)
-        return ret
+def shorter_float_str(f):
+        """ Converts a float to a string like str, but omits trailing .0 """
+        if f.is_integer():
+                return str(int(f))
+        return str(f)
+
+def format_modes(modes, show_flags=False, current_mode=None):
+        t = table.Table(((
+                '*' if mode == current_mode else '',                         # 0
+                str(Q.CGDisplayModeGetWidth(mode)),                          # 1
+                str(Q.CGDisplayModeGetHeight(mode)),                         # 2
+                '@'+shorter_float_str(Q.CGDisplayModeGetRefreshRate(mode)),  # 3
+                format_pixelEncoding(
+                                Q.CGDisplayModeCopyPixelEncoding(mode)))     # 4
+                        for mode in modes))
+        if len(frozenset(t.get_col(4))) == 1: # pixel encodings
+                t.del_col(4)
+        if len(frozenset(t.get_col(3))) == 1: # refresh rates
+                t.del_col(3)
+        return t
 
 def load_quartz():
         # TODO why is this so slow?
@@ -132,28 +133,24 @@ def cmd_list(args):
         tables = []
         headlines = []
         for n, _id in enumerate(ids):
-                Q.CGDisplayIsMain(_id)
                 headlines.append('#%s display %s %s' % (n, _id,
                                 ' '.join(get_flags_of_display(_id))))
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
-                table = []
-                for mode in sorted(Q.CGDisplayCopyAllDisplayModes(_id, None),
-                                        cmp=cmp_mode):
-                        if (not args.all_modes
-                                and not Q.CGDisplayModeIsUsableForDesktopGUI(
-                                        mode)):
-                                continue
-                        prefix = ' *' if cmode == mode else ' '
-                        table.append((prefix,) + format_mode(mode, args.flags))
-                tables.append(table)
-        layout = reduce(printtable.sup_of_layouts,
-                        map(printtable.layout_table, tables), [])
-        for i, table in enumerate(tables):
+                modes = sorted(Q.CGDisplayCopyAllDisplayModes(
+                                        _id, None), cmp=cmp_mode)
+                if not args.all_modes:
+                        modes = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
+                                                modes)
+                tables.append(format_modes(modes, current_mode=cmode,
+                                                show_flags=args.flags))
+        layout = reduce(table.sup_of_layouts,
+                        [t.layout() for t in tables], [])
+        for i, t in enumerate(tables):
                 print
                 print headlines[i]
-                printtable.print_table(table, layout=layout,
-                                        alignment='rrllrl',
-                                        separators=(' ',' ',' x ', ' @'))
+                print t.__str__(layout=layout,
+                                alignment='rrllrl',
+                                separators=(' ',' ',' x '))
 
 def cmd_set(args):
         load_quartz()
@@ -184,13 +181,11 @@ def cmd_set(args):
                 print 'More than one mode matches:'
                 print
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
-                table = []
-                for n, mode in enumerate(candidates):
-                        table.append((' *' if cmode == mode else ' ', str(n)) +
-                                        format_mode(mode, args.flags))
-                printtable.print_table(table,
-                                        alignment='rrrllr',
-                                        separators=(' ',' ',' ',' x ', ' @'))
+                t = format_modes(candidates, show_flags=args.flags,
+                                        current_mode=cmode)
+                t.insert_col(0, map(str, xrange(t.height)))
+                print t.__str__(alignment='rrrllr',
+                                separators=(' ',' ',' ',' x '))
                 print
                 print 'Refine the request or use `--choose n\' to pick '+ \
                                 'canididate n'
