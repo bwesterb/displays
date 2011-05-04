@@ -17,9 +17,13 @@ class Table(object):
                 self.metarow = [self.default_metarow_field]*self.width
         def __getitem__(self, key):
                 assert isinstance(key, tuple) and len(key) == 2
+                if isinstance(key[1], str):
+                        key = (key[0], self.col_by_key(key[1]))
                 return self.rows[key[0]][key[1]]
         def __setitem__(self, key, value):
                 assert isinstance(key, tuple) and len(key) == 2
+                if isinstance(key[1], str):
+                        key = (key[0], self.col_by_key(key[1]))
                 try:
                         row = self.rows[key[0]]
                 except IndexError:
@@ -32,6 +36,8 @@ class Table(object):
                         row[-1] = value
         def __delitem__(self, key):
                 assert isinstance(key, tuple) and len(key) == 2
+                if isinstance(key[1], str):
+                        key = (key[0], self.col_by_key(key[1]))
                 try:
                         self.rows[key[0]][key[1]] = self.empty_value
                 except IndexError:
