@@ -108,6 +108,9 @@ def shorter_float_str(f):
         return str(f)
 
 def format_modes(modes, full_modes=False, current_mode=None):
+        """ Creates a nice readily printable Table for a list of modes.
+            Used in `displays list' and the candidates list
+            in `displays set'. """
         t = table.Table(((
                 '*' if mode == current_mode else '',                         # 0
                 str(Q.CGDisplayModeGetWidth(mode)),                          # 1
@@ -116,7 +119,11 @@ def format_modes(modes, full_modes=False, current_mode=None):
                 format_pixelEncoding(
                                 Q.CGDisplayModeCopyPixelEncoding(mode)))     # 4
                         for mode in modes))
+        t.set_alignment(2, 'l')
+        t.set_alignment(3, 'l')
+        t.set_separator(2, ' x ')
         if not full_modes:
+                # Hide pixel encoding and refresh rates if they don't differ
                 if len(frozenset(t.get_col(4))) == 1: # pixel encodings
                         t.del_col(4)
                 if len(frozenset(t.get_col(3))) == 1: # refresh rates
@@ -149,9 +156,7 @@ def cmd_list(args):
         for i, t in enumerate(tables):
                 print
                 print headlines[i]
-                print t.__str__(layout=layout,
-                                alignment='rrllrl',
-                                separators=(' ',' ',' x '))
+                print t.__str__(layout=layout)
 
 def cmd_set(args):
         load_quartz()
@@ -185,8 +190,7 @@ def cmd_set(args):
                 t = format_modes(candidates, full_modes=args.full_modes,
                                         current_mode=cmode)
                 t.insert_col(0, map(str, xrange(t.height)))
-                print t.__str__(alignment='rrrllr',
-                                separators=(' ',' ',' ',' x '))
+                print t
                 print
                 print 'Refine the request or use `--choose n\' to pick '+ \
                                 'canididate n'
