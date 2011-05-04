@@ -119,15 +119,17 @@ def format_modes(modes, full_modes=False, current_mode=None):
                 format_pixelEncoding(
                                 Q.CGDisplayModeCopyPixelEncoding(mode)))     # 4
                         for mode in modes))
-        t.set_alignment(2, 'l')
-        t.set_alignment(3, 'l')
-        t.set_separator(2, ' x ')
+        t.set_key(2, 'height')
+        t.set_key(3, 'rate')
+        t.set_key(4, 'depth')
+        t.set_alignment('height', 'l')
+        t.set_alignment('rate', 'l')
+        t.set_separator('height', ' x ')
         if not full_modes:
-                # Hide pixel encoding and refresh rates if they don't differ
-                if len(frozenset(t.get_col(4))) == 1: # pixel encodings
-                        t.del_col(4)
-                if len(frozenset(t.get_col(3))) == 1: # refresh rates
-                        t.del_col(3)
+                if len(frozenset(t.get_col('rate'))) == 1:
+                        t.del_col('rate')
+                if len(frozenset(t.get_col('depth'))) == 1:
+                        t.del_col('depth')
         return t
 
 def load_quartz():
