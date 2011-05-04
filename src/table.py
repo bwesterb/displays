@@ -11,9 +11,9 @@ class Table(object):
                         else [[field for field in row] for row in data] 
                 self.empty_value = Table.Empty()
                 self.metarow_field = namedtuple('meta_row_field',
-                                                ['alignment', 'separator'])
+                                        ['alignment', 'separator', 'key'])
                 self.default_metarow_field = self.metarow_field(
-                                alignment='r', separator=' ')
+                                alignment='r', separator=' ', key=None)
                 self.metarow = [self.default_metarow_field]*self.width
         def __getitem__(self, key):
                 assert isinstance(key, tuple) and len(key) == 2
@@ -53,6 +53,8 @@ class Table(object):
                 except IndexError:
                         pass
         def get_col(self, i):
+                if isinstance(i, str):
+                        i = self.col_by_key(i)
                 ret = []
                 for row in self.rows:
                         try:
@@ -61,6 +63,8 @@ class Table(object):
                                 row.append(self.empty_value)
                 return ret
         def set_col(self, i, col):
+                if isinstance(i, str):
+                        i = self.col_by_key(i)
                 for j, row in enumerate(self.rows):
                         try:
                                 row[i] = col[j]
@@ -72,6 +76,8 @@ class Table(object):
                                         (self.default_metarow_field,) * (
                                                 len(row) - i))
         def del_col(self, i):
+                if isinstance(i, str):
+                        i = self.col_by_key(i)
                 for row in self.rows:
                         try:
                                 del row[i]
@@ -89,6 +95,8 @@ class Table(object):
         def insert_row(self, i, row):
                 self.rows.insert(i, list(row))
         def insert_col(self, i, col):
+                if isinstance(i, str):
+                        i = self.col_by_key(i)
                 for j, row in enumerate(self.rows):
                         row.insert(i, col[j])
                 self.metarow.insert(i, self.default_metarow_field)
@@ -170,16 +178,34 @@ class Table(object):
                                         field = ''
                                 ret[n] = max(ret[n], len(field))
                 return ret
+        def set_key(self, column, key):
+                self.metarow[column] = self.metarow[column]._replace(
+                                        key = key)
+        def get_key(self, column):
+                return self.metarow[column].key
         def set_alignment(self, column, alignment):
+                if isinstance(column, str):
+                        column = self.col_by_key(column)
                 self.metarow[column] = self.metarow[column]._replace(
                                         alignment = alignment)
         def get_alignment(self, column):
+                if isinstance(column, str):
+                        column = self.col_by_key(column)
                 return self.metarow[column].alignment
         def set_separator(self, column, separator):
+                if isinstance(column, str):
+                        column = self.col_by_key(column)
                 self.metarow[column] = self.metarow[column]._replace(
                                         separator = separator)
         def get_separator(self, column):
+                if isinstance(column, str):
+                        column = self.col_by_key(column)
                 return self.metarow[column].separator
+        def col_by_key(self, key):
+                for i, meta in enumerate(self.metarow):
+                        if key == meta.key:
+                                return i
+                raise IndexError, "Key not found"
 
 def sup_of_layouts(layout1, layout2):
         """ Return the least layout compatible with layout1 and layout2 """
