@@ -1,5 +1,7 @@
 """ Table datatype """
 
+from collections import namedtuple
+
 class Table(object):
         class Empty(object):
                 def __str__(self):
@@ -8,6 +10,11 @@ class Table(object):
                 self.rows = [] if data is None \
                         else [[field for field in row] for row in data] 
                 self.empty_value = Table.Empty()
+                self.metarow_field = namedtuple('meta_row_field',
+                                                ['alignment', 'separator'])
+                self.default_metarow_field = self.metarow_field(
+                                alignment='r', separator=' ')
+                self.metarow = [self.default_metarow_field]*self.width
         def __getitem__(self, key):
                 assert isinstance(key, tuple) and len(key) == 2
                 return self.rows[key[0]][key[1]]
@@ -61,14 +68,22 @@ class Table(object):
                                 row.extend((self.empty_value,) * (
                                                 len(row) - i - 1))
                                 row.append(col[j])
+                                self.metarow.extend(
+                                        (self.default_metarow_field,) * (
+                                                len(row) - i))
         def del_col(self, i):
                 for row in self.rows:
                         try:
                                 del row[i]
                         except IndexError:
                                 pass
+                try:
+                        del self.metarow[i]
+                except IndexError:
+                        pass
         def append_row(self, row):
                 self.rows.append(row)
+                self.metarow.append(self.default_metarow_field)
         def append_col(self, col):
                 self.set_col(self.width, col)
         def insert_row(self, i, row):
@@ -76,6 +91,7 @@ class Table(object):
         def insert_col(self, i, col):
                 for j, row in enumerate(self.rows):
                         row.insert(i, col[j])
+                self.metarow.insert(i, self.default_metarow_field)
         @property
         def width(self):
                 return max((len(row) for row in self.rows))
@@ -95,11 +111,12 @@ class Table(object):
 		how columns should be aligned. For instance, "lrc"
 		will align the first column to the left, the second
 		to the right and the last column will be centered.
-		If no alignment is specified, right alignment is
-		assumed.
+		If no alignment is specified, the alignment set
+                with set_alignment is used.
                 
 		separators is an iterable of strings to separate
-		the columns.  If none is specified, ' ' is assumed.
+		the columns.  If none is specified, the separator
+                set with set_separator is used.
 		"""
                 ret = ''
                 if layout is None:
@@ -107,9 +124,9 @@ class Table(object):
                 alignment = tuple() if alignment is None else tuple(alignment) 
                 seps = tuple() if separators is None else tuple(separators) 
                 if len(alignment) < len(layout):
-                        alignment += ('r',) * (len(layout) - len(alignment))
+                        alignment += (None,) * (len(layout) - len(alignment))
                 if len(seps) < len(layout):
-                        seps += (' ',) * (len(layout) - len(seps))
+                        seps += (None,) * (len(layout) - len(seps))
                 first = True
                 for row in self.rows:
                         if first:
@@ -117,24 +134,29 @@ class Table(object):
                         else:
                                 ret += '\n'
                         for n, field in enumerate(row):
+                                sep = self.get_separator(n) \
+                                        if seps[n] is None \
+                                        else seps[n]
                                 if n != 0:
-                                        ret += seps[n]
+                                        ret += sep
                                 if field is self.empty_value:
                                         field = ''
-                                if alignment[n] == 'r':
+                                al = self.get_alignment(n) \
+                                        if alignment[n] is None \
+                                        else alignment[n]
+                                if al == 'r':
                                         ret += " "*(layout[n] - len(field)
                                                         ) + field
-                                elif alignment[n] == 'l':
+                                elif al == 'l':
                                         ret += field + " "*(layout[n]
                                                                 - len(field))
-                                elif alignment[n] == 'c':
+                                elif al == 'c':
                                         lspace = (layout[n] - len(field)) / 2
                                         rspace = layout[n] - len(field) - lspace
                                         ret += " "*lspace + field + " "*rspace
                                 else:
                                         raise ValueError, \
-                                                "Unknown alignment %s" % \
-                                                        alignment[n]
+                                                "Unknown alignment %s" % al
                 return ret
 
         def layout(self):
@@ -148,6 +170,16 @@ class Table(object):
                                         field = ''
                                 ret[n] = max(ret[n], len(field))
                 return ret
+        def set_alignment(self, column, alignment):
+                self.metarow[column] = self.metarow[column]._replace(
+                                        alignment = alignment)
+        def get_alignment(self, column):
+                return self.metarow[column].alignment
+        def set_separator(self, column, separator):
+                self.metarow[column] = self.metarow[column]._replace(
+                                        separator = separator)
+        def get_separator(self, column):
+                return self.metarow[column].separator
 
 def sup_of_layouts(layout1, layout2):
         """ Return the least layout compatible with layout1 and layout2 """
