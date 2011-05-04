@@ -168,7 +168,6 @@ def format_modes(modes, full_modes=False, current_mode=None):
                                                         - common_flags)
         if created_flags_col:
                 t.set_alignment('flags', 'l')
-                print t.metarow
         return t
 
 def load_quartz():
