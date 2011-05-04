@@ -107,7 +107,7 @@ def shorter_float_str(f):
                 return str(int(f))
         return str(f)
 
-def format_modes(modes, show_flags=False, current_mode=None):
+def format_modes(modes, full_modes=False, current_mode=None):
         t = table.Table(((
                 '*' if mode == current_mode else '',                         # 0
                 str(Q.CGDisplayModeGetWidth(mode)),                          # 1
@@ -116,10 +116,11 @@ def format_modes(modes, show_flags=False, current_mode=None):
                 format_pixelEncoding(
                                 Q.CGDisplayModeCopyPixelEncoding(mode)))     # 4
                         for mode in modes))
-        if len(frozenset(t.get_col(4))) == 1: # pixel encodings
-                t.del_col(4)
-        if len(frozenset(t.get_col(3))) == 1: # refresh rates
-                t.del_col(3)
+        if not full_modes:
+                if len(frozenset(t.get_col(4))) == 1: # pixel encodings
+                        t.del_col(4)
+                if len(frozenset(t.get_col(3))) == 1: # refresh rates
+                        t.del_col(3)
         return t
 
 def load_quartz():
@@ -142,7 +143,7 @@ def cmd_list(args):
                         modes = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
                                                 modes)
                 tables.append(format_modes(modes, current_mode=cmode,
-                                                show_flags=args.flags))
+                                                full_modes=args.full_modes))
         layout = reduce(table.sup_of_layouts,
                         [t.layout() for t in tables], [])
         for i, t in enumerate(tables):
@@ -181,7 +182,7 @@ def cmd_set(args):
                 print 'More than one mode matches:'
                 print
                 cmode = Q.CGDisplayCopyDisplayMode(_id)
-                t = format_modes(candidates, show_flags=args.flags,
+                t = format_modes(candidates, full_modes=args.full_modes,
                                         current_mode=cmode)
                 t.insert_col(0, map(str, xrange(t.height)))
                 print t.__str__(alignment='rrrllr',
@@ -300,8 +301,8 @@ def parse_args():
         parser_list.add_argument('-a', '--all-modes', action="store_true",
                 help="List all modes, including those unsuitable"+
                         " for desktop GUI")
-        parser_list.add_argument('-f', '--flags', action="store_true",
-                help="Show IO flags")
+        parser_list.add_argument('-f', '--full-modes', action="store_true",
+                help="Show full modes")
         parser_list.set_defaults(func=cmd_list)
 
         # displays set
@@ -327,8 +328,8 @@ def parse_args():
         parser_set.add_argument('-a', '--all-modes', action='store_true',
                         help="Consider modes unusable for desktop GUI even "+
                                 "if there are matching modes that are usable")
-        parser_set.add_argument('-f', '--flags', action="store_true",
-                help="Show IO flags, when displaying modes")
+        parser_set.add_argument('-f', '--full-modes', action="store_true",
+                help="Show full modes")
         parser_set.set_defaults(func=cmd_set)
 
         # displays mirror
