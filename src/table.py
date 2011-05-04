@@ -27,12 +27,13 @@ class Table(object):
                 try:
                         row = self.rows[key[0]]
                 except IndexError:
-                        self.rows.extend(([],) * (len(self.rows) - key[0]))
+                        self.rows.extend(([],) * (len(self.rows) - key[0] + 1))
                         row = self.rows[-1]
                 try:
                         row[key[1]] = value
                 except IndexError:
-                        row.extend((self.empty_value,) * (len(row) - key[1]))
+                        row.extend((self.empty_value,) * (
+                                len(row) - key[1] + 1))
                         row[-1] = value
         def __delitem__(self, key):
                 assert isinstance(key, tuple) and len(key) == 2
@@ -51,7 +52,7 @@ class Table(object):
                 try:
                         self.rows[i] = list(row)
                 except IndexError:
-                        self.rows.extend(([],) * (len(self.rows) - key[0] - 1))
+                        self.rows.extend(([],) * (len(self.rows) - key[0]))
                         self.rows.append(list(row))
         def del_row(self, i):
                 try:
@@ -68,19 +69,26 @@ class Table(object):
                         except IndexError:
                                 row.append(self.empty_value)
                 return ret
-        def set_col(self, i, col):
+        def set_col(self, i, col, key=None):
                 if isinstance(i, str):
                         i = self.col_by_key(i)
                 for j, row in enumerate(self.rows):
                         try:
-                                row[i] = col[j]
+                                v = col[j]
+                        except IndexError:
+                                v = self.empty_value
+                        try:
+                                row[i] = v
                         except IndexError:
                                 row.extend((self.empty_value,) * (
-                                                len(row) - i - 1))
-                                row.append(col[j])
-                                self.metarow.extend(
-                                        (self.default_metarow_field,) * (
                                                 len(row) - i))
+                                row.append(col[j])
+                if i >= len(self.metarow):
+                        self.metarow.extend(
+                                (self.default_metarow_field,) * (
+                                        len(self.metarow) - i + 1))
+                if key is not None:
+                        self.set_key(i, key)
         def del_col(self, i):
                 if isinstance(i, str):
                         i = self.col_by_key(i)
@@ -96,8 +104,8 @@ class Table(object):
         def append_row(self, row):
                 self.rows.append(row)
                 self.metarow.append(self.default_metarow_field)
-        def append_col(self, col):
-                self.set_col(self.width, col)
+        def append_col(self, col, key=None):
+                self.set_col(self.width, col, key)
         def insert_row(self, i, row):
                 self.rows.insert(i, list(row))
         def insert_col(self, i, col):
