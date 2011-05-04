@@ -107,6 +107,15 @@ def shorter_float_str(f):
                 return str(int(f))
         return str(f)
 
+def get_flags_of_mode(mode):
+        flags = Q.CGDisplayModeGetIOFlags(mode)
+        ret = []
+        for name, flag in IOFLAGS.iteritems():
+                if flags & flag == 0:
+                        continue
+                ret.append(name)
+        return ret
+
 def format_modes(modes, full_modes=False, current_mode=None):
         """ Creates a nice readily printable Table for a list of modes.
             Used in `displays list' and the candidates list
@@ -125,11 +134,41 @@ def format_modes(modes, full_modes=False, current_mode=None):
         t.set_alignment('height', 'l')
         t.set_alignment('rate', 'l')
         t.set_separator('height', ' x ')
-        if not full_modes:
+        created_flags_col = False
+        if full_modes:
+                t.append_col(tuple((' '.join(get_flags_of_mode(mode))
+                                        for mode in modes)), key='flags')
+                created_flags_col = True
+        else:
+                # Remove refresh rate and bit depth if they are all the same
                 if len(frozenset(t.get_col('rate'))) == 1:
                         t.del_col('rate')
                 if len(frozenset(t.get_col('depth'))) == 1:
                         t.del_col('depth')
+
+                # Show distinct IO flags when several modes appear the same
+                lut = {}
+                for i, row in enumerate(t):
+                        row = tuple(row)
+                        if row not in lut:
+                                lut[row] = []
+                        elif not created_flags_col:
+                                t.append_col(('',) * len(modes), key='flags')
+                        lut[row].append(i)
+                for rw, indices in lut.iteritems():
+                        if len(indices) == 1:
+                                continue
+                        flags = {}
+                        for i in indices:
+                                flags[i] = get_flags_of_mode(modes[i])
+                        common_flags = reduce(lambda x, y: x.intersection(y),
+                                        map(frozenset, flags.itervalues()))
+                        for i in indices:
+                                t[i, 'flags'] = ' '.join(frozenset(flags[i])
+                                                        - common_flags)
+        if created_flags_col:
+                t.set_alignment('flags', 'l')
+                print t.metarow
         return t
 
 def load_quartz():
