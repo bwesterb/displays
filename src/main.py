@@ -187,8 +187,11 @@ def cmd_list(args):
                 modes = sorted(Q.CGDisplayCopyAllDisplayModes(
                                         _id, None), cmp=cmp_mode)
                 if not args.all_modes:
+                        old_modes = modes
                         modes = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
                                                 modes)
+                        if not modes: # do not filter if there are none left
+                                modes = old_modes
                 tables.append(format_modes(modes, current_mode=cmode,
                                                 full_modes=args.full_modes))
         layout = reduce(table.sup_of_layouts,
