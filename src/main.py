@@ -20,10 +20,23 @@ IOFLAGS = {
         'TV':                   0x100000,
         'MirroringIsOK':        0x200000 }
 
+def our_IsUsableForDesktopGUI(m):
+        """ A more leniant version of CGDisplayModeIsUsableForDesktopGUI """
+        if guess_bitDepth(Q.CGDisplayModeCopyPixelEncoding(m)) != 24:
+                return False
+        if Q.CGDisplayModeGetWidth(m) < 640:
+                return False
+        if Q.CGDisplayModeGetHeight(m) < 480:
+                return False
+        return True
+
 def cmp_mode(b, a):
         """ A comparison function for displaymodes """
         tmp = cmp(Q.CGDisplayModeIsUsableForDesktopGUI(a),
                   Q.CGDisplayModeIsUsableForDesktopGUI(b))
+        if tmp != 0: return tmp
+        tmp = cmp(our_IsUsableForDesktopGUI(a),
+                  our_IsUsableForDesktopGUI(b))
         if tmp != 0: return tmp
         tmp = cmp(guess_bitDepth(Q.CGDisplayModeCopyPixelEncoding(a)),
                   guess_bitDepth(Q.CGDisplayModeCopyPixelEncoding(b)))
@@ -191,7 +204,10 @@ def cmd_list(args):
                         modes = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
                                                 modes)
                         if not modes: # do not filter if there are none left
-                                modes = old_modes
+                                modes = filter(our_IsUsableForDesktopGUI,
+                                                old_modes)
+                                if not modes:
+                                        modes = old_modes
                 tables.append(format_modes(modes, current_mode=cmode,
                                                 full_modes=args.full_modes))
         layout = reduce(table.sup_of_layouts,
@@ -219,10 +235,15 @@ def cmd_set(args):
                                         cmp_mode)
         # If there is a candidate that is usable for desktop GUI,
         # we will filter out the candidates that are not usable.
-        if not args.all_modes and any([Q.CGDisplayModeIsUsableForDesktopGUI(m)
-                        for m in candidates]):
+        if not args.all_modes:
+                old_candidates = candidates
                 candidates = filter(Q.CGDisplayModeIsUsableForDesktopGUI,
                                         candidates)
+                if not candidates:
+                        candidates = filter(our_IsUsableForDesktopGUI,
+                                        old_candidates)
+                        if not candidates:
+                                candidates = old_candidates
         if len(candidates) == 0:
                 print 'No supported displaymode matches'
                 return -1
