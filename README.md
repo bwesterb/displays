@@ -53,6 +53,13 @@ To change the mode of another display, use the option `--display`.  Example:
 Changes persist for the duration of the loginsession.  To apply the
 changes for every session, use the `--permanently` flag.
 
+`displays` can also automatically configure the displaymodes as it thinks is
+best:
+
+        $ displays auto
+
+Basically, `displays` will pick the top modes listed by `displays list`.
+
 Configuring mirroring
 ---------------------
 A bunch of displays that show the same image are called a mirroring set.

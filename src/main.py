@@ -217,6 +217,28 @@ def cmd_list(args):
                 print headlines[i]
                 print t.__str__(layout=layout)
 
+def cmd_auto(args):
+        load_quartz()
+        for _id in get_online_display_ids():
+                candidates = sorted(Q.CGDisplayCopyAllDisplayModes(_id, None),
+                                cmp_mode)
+                if not args.all_modes:
+                        old_candidates = candidates
+                        candidates = filter(
+                                        Q.CGDisplayModeIsUsableForDesktopGUI,
+                                                candidates)
+                        if not candidates:
+                                candidates = filter(our_IsUsableForDesktopGUI,
+                                                old_candidates)
+                                if not candidates:
+                                        candidates = old_candidates
+                        if not candidates:
+                                continue
+                        mode = candidates[0]
+                        cmode = Q.CGDisplayCopyDisplayMode(_id)
+                        if cmode != mode:
+                                set_mode(_id, mode, args.permanently)
+
 def cmd_set(args):
         load_quartz()
         if args.display is None:
@@ -259,20 +281,24 @@ def cmd_set(args):
                 print 'Refine the request or use `--choose n\' to pick '+ \
                                 'canididate n'
                 return -2
+        set_mode(_id, candidates[0 if args.choose is None else args.choose],
+                        args.permanently)
+
+def set_mode(display_id, mode, permanently=False):
         r, config = Q.CGBeginDisplayConfiguration(None) 
         if(r != 0):
                 print 'CGBeginDisplayConfiguration failed'
                 return -3
         if(Q.CGConfigureDisplayWithDisplayMode(
                         config,
-                        _id,
-                        candidates[0 if args.choose is None else args.choose],
+                        display_id,
+                        mode,
                         None) != 0):
                 print 'CGConfigureDisplayWithDisplayMode failed'
                 return -4
         if(Q.CGCompleteDisplayConfiguration(
                         config,
-                        Q.kCGConfigurePermanently if args.permanently
+                        Q.kCGConfigurePermanently if permanently
                                 else Q.kCGConfigureForSession)):
                 print 'CGCompleteDisplayConfiguration failed'
                 return -5
@@ -372,6 +398,19 @@ def parse_args():
         parser_list.add_argument('-f', '--full-modes', action="store_true",
                 help="Show full modes")
         parser_list.set_defaults(func=cmd_list)
+
+        # displays auto
+        parser_auto = subparsers.add_parser('auto',
+                description="""
+                Tries to configure the displays automatically
+                """,
+                help='Configure displaymodes automatically')
+        parser_auto.add_argument('-p', '--permanently', action="store_true",
+                help="Persist the configuration over sessions")
+        parser_auto.add_argument('-a', '--all-modes', action='store_true',
+                        help="Consider modes unusable for desktop GUI even "+
+                                "if there are matching modes that are usable")
+        parser_auto.set_defaults(func=cmd_auto)
 
         # displays set
         parser_set = subparsers.add_parser('set',
